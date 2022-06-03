@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Components\Extensions\AWOMS.Zernest.Components.Extensions.csproj" />
+    <ProjectReference Include="..\..\Components\Horses\AWOMS.Zernest.Components.Horses.csproj" />
+    <ProjectReference Include="..\..\Components\Races\AWOMS.Zernest.Components.Races.csproj" />
+    <ProjectReference Include="..\..\Components\ZedRun\AWOMS.Zernest.Components.ZedRun.csproj" />
+    <ProjectReference Include="..\..\Components\TestHelpers\AWOMS.Zernest.Components.TestHelpers.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
+    <PackageReference Include="Majorsoft.Blazor.Components.Notifications" Version="1.5.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.3.1" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+</Project>

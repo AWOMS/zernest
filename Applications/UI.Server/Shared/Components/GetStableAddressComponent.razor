@@ -1,0 +1,51 @@
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.Extensions.Logging
+@implements IDisposable
+@inject ILogger<GetStableAddressComponent> Logger
+@inject IJSRuntime JS
+
+<EditForm Model="@stableAddressForm" OnValidSubmit="@HandleValidSubmit" class="form">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <p>
+        <label class="form-label">
+            <InputText id="stableAddress" @bind-Value="stableAddressForm.StableAddress" DisplayName="Stable Address" size=52
+                placeholder="0xe0fcc8cc..." class="form-control" />
+        </label>
+    </p>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+@code {
+    
+    [Parameter]
+    public EventCallback<string> GotStableAddress { get; set; } 
+    [Parameter]
+    public string Placeholder { get; set; } //= "0xfD0De0CAd2A2Ef78654681b5648e28250c814C7D";
+    private EditContext? editContext;
+    private StableAddressForm stableAddressForm = new();
+    public class StableAddressForm
+    {
+        [Required]
+        [StringLength(42, MinimumLength = 42, ErrorMessage = "Address should be 42 characters long in format of 0xRn3q...")]
+        public string? StableAddress { get; set; }
+    }
+
+    protected override void OnInitialized()
+    {
+        // allows to override placeholder as param
+        stableAddressForm.StableAddress = Placeholder;
+        editContext = new(stableAddressForm);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        Logger.LogInformation("HandleValidSubmit called");
+        await GotStableAddress.InvokeAsync(stableAddressForm.StableAddress);
+    }
+    
+    public void Dispose()
+    {
+        Logger.LogDebug("Disposing");
+    }
+}

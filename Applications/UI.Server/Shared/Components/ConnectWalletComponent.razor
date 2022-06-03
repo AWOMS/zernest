@@ -1,0 +1,63 @@
+@using Microsoft.Extensions.Logging
+@implements IDisposable
+@inject ILogger<ConnectWalletComponent> Logger
+@inject IJSRuntime JS
+
+@if (State == "init")
+{
+    <button @onclick="ConnectToWallet" class="btn btn-primary">Connect Wallet</button>
+}
+
+@if (State == "connecting")
+{
+    <div class="alert alert-warning">Connecting to wallet...</div>
+}
+
+@if (State == "done")
+{
+    @if (OwnerAddress is not null)
+    {
+        <div class="alert alert-success">Wallet address: @OwnerAddress</div>
+    }
+    else
+    {
+        <div class="alert alert-danger">Unable to connect to wallet.</div>
+    }
+}
+
+@code {
+
+    [Parameter]
+    public EventCallback<string> GotWalletAddress { get; set; }
+    public string State { get; set; } = "init";
+    public string? OwnerAddress { get; set; } = null;
+    private IJSObjectReference module;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Logger.LogInformation("OnAfterRenderAsync invoking import js: ./Shared/Components/ConnectWalletComponent.razor.js");
+            module = await JS.InvokeAsync<IJSObjectReference>("import", "./Shared/Components/ConnectWalletComponent.razor.js");
+        }
+    }
+
+    private async Task ConnectToWallet()
+    {
+        Logger.LogInformation("ConnectToWallet called");
+        State = "connecting";
+        // js/zernest/components/wallet.js
+        OwnerAddress = await JS.InvokeAsync<string>("wallet");
+        State = "done";
+        Logger.LogInformation($"OwnerAddress: {OwnerAddress}");
+        StateHasChanged(); // since we set OwnerAddress via JS call we have to call this to render the change
+
+        // return results to parent calling component
+        await GotWalletAddress.InvokeAsync(OwnerAddress);
+    }
+
+    public void Dispose()
+    {
+        Logger.LogDebug("Disposing");
+    }
+}

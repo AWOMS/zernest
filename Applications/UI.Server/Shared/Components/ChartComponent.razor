@@ -1,0 +1,81 @@
+﻿@implements IDisposable
+@inject ILogger<ChartComponent> Logger
+@inject IJSRuntime JS
+
+<canvas id="@Id"></canvas>
+
+@code {
+    public enum ChartType
+    {
+        Pie,
+        Bar,
+        Radar,
+        Doughnut
+    }
+
+    [Parameter]
+    public string Id { get; set; }
+
+    [Parameter]
+    public ChartType Type { get; set; }
+
+    [Parameter]
+    public string[] Data { get; set; }
+
+    [Parameter]
+    public string[] BackgroundColor { get; set; }
+
+    [Parameter]
+    public string[] Labels { get; set; }
+
+    [Parameter]
+    public string DatasetLabel { get; set; }
+
+    //private Lazy<IJSObjectReference> ExampleModule = new();
+    //private IJSObjectReference module;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Here we create an anonymous type with all the options
+        // that need to be sent to Chart.js
+        var config = new
+        {
+            Type = Type.ToString().ToLower(),
+            Options = new
+            {
+                Responsive = true,
+                Scales = new
+                {
+                    // not needed for doughnut or pie
+                    YAxes = new[]
+                    {
+                        new {
+                            Ticks = new {
+                                BeginAtZero=true
+                            }
+                        }
+                    }
+                }
+            },
+            Data = new
+            {
+                Datasets = new[]
+                {
+                    new {
+                        Data = Data,
+                        BackgroundColor = BackgroundColor,
+                        Label = ""//DatasetLabel
+                    }
+                },
+                Labels = Labels
+            }
+        };
+
+        await JS.InvokeVoidAsync("setupChart", Id, config);
+    }
+
+    public void Dispose()
+    {
+        Logger.LogDebug("Disposing");
+    }
+}

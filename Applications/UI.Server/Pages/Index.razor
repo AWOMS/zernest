@@ -1,0 +1,87 @@
+﻿@page "/"
+@using Microsoft.Extensions.Logging
+@inject ILogger<Index> Logger
+@inject IJSRuntime JS
+
+<PageTitle>Zernest Home</PageTitle>
+
+<div class="bg-dark text-light px-4 py-5 text-center">
+       <div class="py-5">
+              <h1 class="display-5 fw-bold text-white">Welcome to Zernest!</h1>
+              <div class="col-lg-6 mx-auto">
+                     <p class="fs-5 mb-4">We are here to help you make heads or <em>tails</em> of your horses.</p>
+                     <p>To get started, check out:</p>
+
+                     <div class="row row-cols-1 row-cols-md-2 g-4">
+                            <div class="col">
+                                   <div class="card">
+                                          <div class="card-body">
+                                                 <h5 class="card-title">Open Races</h5>
+                                                 <p class="card-text">Be alerted once a race opens up matching your
+                                                        filters.</p>
+                                                 <NavLink class="nav-link btn btn-primary" href="openraces">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                               fill="currentColor" class="bi bi-binoculars-fill"
+                                                               viewBox="0 0 16 16">
+                                                               <path
+                                                                      d="M4.5 1A1.5 1.5 0 0 0 3 2.5V3h4v-.5A1.5 1.5 0 0 0 5.5 1h-1zM7 4v1h2V4h4v.882a.5.5 0 0 0 .276.447l.895.447A1.5 1.5 0 0 1 15 7.118V13H9v-1.5a.5.5 0 0 1 .146-.354l.854-.853V9.5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5v.793l.854.853A.5.5 0 0 1 7 11.5V13H1V7.118a1.5 1.5 0 0 1 .83-1.342l.894-.447A.5.5 0 0 0 3 4.882V4h4zM1 14v.5A1.5 1.5 0 0 0 2.5 16h3A1.5 1.5 0 0 0 7 14.5V14H1zm8 0v.5a1.5 1.5 0 0 0 1.5 1.5h3a1.5 1.5 0 0 0 1.5-1.5V14H9zm4-11H9v-.5A1.5 1.5 0 0 1 10.5 1h1A1.5 1.5 0 0 1 13 2.5V3z" />
+                                                        </svg> Open Races
+                                                 </NavLink>
+                                          </div>
+                                   </div>
+                            </div>
+                            <div class="col">
+                                   <div class="card">
+                                          <div class="card-body">
+                                                 <h5 class="card-title">Stable</h5>
+                                                 <p class="card-text">Get all horses belonging to a stable.</p>
+                                                 <NavLink class="nav-link btn btn-primary" href="stable">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                               fill="currentColor" class="bi bi-diagram-3"
+                                                               viewBox="0 0 16 16">
+                                                               <path fill-rule="evenodd"
+                                                                      d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1zM8.5 5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1zM0 11.5A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm4.5.5A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm4.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z" />
+                                                        </svg> Stable
+                                                 </NavLink>
+                                          </div>
+                                   </div>
+                            </div>
+                            <div class="col">
+                                   <div class="card">
+                                          <div class="card-body">
+                                                 <h5 class="card-title">Horses</h5>
+                                                 <p class="card-text">View individual horse details.</p>
+                                                 <NavLink class="nav-link btn btn-primary" href="horses">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                               fill="currentColor" class="bi bi-card-heading"
+                                                               viewBox="0 0 16 16">
+                                                               <path
+                                                                      d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h13zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13z" />
+                                                               <path
+                                                                      d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5zm0-5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-1z" />
+                                                        </svg> Horses
+                                                 </NavLink>
+                                          </div>
+                                   </div>
+                            </div>
+                            <div class="col">
+                                   <div class="card">
+                                          <div class="card-body">
+                                                 <h5 class="card-title">Changelog</h5>
+                                                 <p class="card-text">Whats been going on.</p>
+                                                 <NavLink class="nav-link btn btn-primary" href="changelog">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                               fill="currentColor" class="bi bi-list-check"
+                                                               viewBox="0 0 16 16">
+                                                               <path fill-rule="evenodd"
+                                                                      d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3.854 2.146a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708L2 3.293l1.146-1.147a.5.5 0 0 1 .708 0zm0 4a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708L2 7.293l1.146-1.147a.5.5 0 0 1 .708 0zm0 4a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 0 1 .708-.708l.146.147 1.146-1.147a.5.5 0 0 1 .708 0z" />
+                                                        </svg> Changelog
+                                                 </NavLink>
+                                          </div>
+                                   </div>
+                            </div>
+                     </div>
+              </div>
+       </div>
+</div>
+<p>&nbsp;</p>

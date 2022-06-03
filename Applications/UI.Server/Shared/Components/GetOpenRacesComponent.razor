@@ -1,0 +1,746 @@
+@using Microsoft.Extensions.Logging
+@using AWOMS.Zernest.Components.Races.GetOpenRacesV2
+@using AWOMS.Zernest.Components.Extensions;
+@using System.Text.Json
+@using Majorsoft.Blazor.Components.Notifications
+@implements IAsyncDisposable
+@inject ILogger<GetOpenRacesComponent> Logger
+@inject PersistentComponentState ApplicationState
+@inject AWOMS.Zernest.Components.Races.GetOpenRacesV2.GetOpenRacesCommandHandler GetOpenRacesCommandHandler
+@inject AutoMapper.IMapper Mapper
+@inject IJSRuntime JS
+@inject IHtmlNotificationService _notificationService
+
+<div class="container">
+    
+    @if (_notificationSupported && _htmlNotificationPermission != HtmlNotificationPermissionTypes.Granted)
+    {
+        <div class="row">
+            <div class="col">
+                <p>
+                    <button class="btn btn-primary" @onclick="RequestPermission">Enable Browser Notifications</button>
+                </p>
+            </div>
+        </div>
+    }
+        
+    <div class="row">
+        <div class="col">
+            <input type="checkbox" class="btn-check" id="btn-check-outlined" checked autocomplete="off">
+            <label class="btn btn-outline-primary btn-sm" for="btn-check-outlined" data-bs-toggle="collapse" data-bs-target="#filters">Filters</label>
+            <label class="btn btn-outline-primary btn-sm" @onclick="HandleResetFiltersClick">Reset Filters</label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            @if (Races != null && Races.Count() > 10)
+            {
+                <div class="alert alert-warning text-dark" role="alert">
+                    <h4 class="alert-heading">Too many results!</h4>
+                    <p>This works a lot better if you specify the exact race conditions you are looking for.</p>
+                </div>
+            }
+        </div>
+    </div>
+    <div id="filters" class="row collapse show">
+        <div class="col">
+
+            <EditForm Model="@FiltersForm" OnValidSubmit="@HandleValidSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="row">
+                    <div class="col hstack gap-3">
+                        <p>Class: </p>
+
+                        <InputRadioGroup @bind-Value="FiltersForm.ClassSelected">
+
+                            <InputRadio Value="@Zernest.Models.ZedRun.Classes.All" id="btn-check-ClassAllSelected" class="btn-check" />
+                            <label class="btn btn-outline-primary btn-sm" for="btn-check-ClassAllSelected">All Classes</label>
+
+                            <InputRadio Value="@Zernest.Models.ZedRun.Classes.One" id="btn-check-Class1IsSelected" class="btn-check" />
+                            <label class="btn btn-outline-primary btn-sm" for="btn-check-Class1IsSelected">I</label>
+
+                            <InputRadio Value="@Zernest.Models.ZedRun.Classes.Two" id="btn-check-Class2IsSelected" class="btn-check" />
+                            <label class="btn btn-outline-primary btn-sm" for="btn-check-Class2IsSelected">II</label>
+
+                            <InputRadio Value="@Zernest.Models.ZedRun.Classes.Three" id="btn-check-Class3IsSelected" class="btn-check" />
+                            <label class="btn btn-outline-primary btn-sm" for="btn-check-Class3IsSelected">III</label>
+
+                            <InputRadio Value="@Zernest.Models.ZedRun.Classes.Four" id="btn-check-Class4IsSelected" class="btn-check" />
+                            <label class="btn btn-outline-primary btn-sm" for="btn-check-Class4IsSelected">IV</label>
+
+                            <InputRadio Value="@Zernest.Models.ZedRun.Classes.Five" id="btn-check-Class5IsSelected" class="btn-check" />
+                            <label class="btn btn-outline-primary btn-sm" for="btn-check-Class5IsSelected">V</label>
+
+                            <InputRadio Value="@Zernest.Models.ZedRun.Classes.Six" id="btn-check-Class6IsSelected" class="btn-check" />
+                            <label class="btn btn-outline-primary btn-sm" for="btn-check-Class6IsSelected">VI</label>
+
+                            <InputRadio Value="@Zernest.Models.ZedRun.Classes.Discovery" id="btn-check-ClassDiscoveryIsSelected" class="btn-check" />
+                            <label class="btn btn-outline-primary btn-sm" for="btn-check-ClassDiscoveryIsSelected">Discovery</label>
+
+                            <InputRadio Value="@Zernest.Models.ZedRun.Classes.Open" id="btn-check-ClassOpenIsSelected" class="btn-check" />
+                            <label class="btn btn-outline-primary btn-sm" for="btn-check-ClassOpenIsSelected">Open</label>
+
+                        </InputRadioGroup>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col hstack gap-3">
+                        
+                        <p>Distance: </p>
+                        <InputCheckbox @bind-Value="FiltersForm.DistanceAllIsSelected" id="btn-check-DistanceAllIsSelected" class="btn-check" />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-DistanceAllIsSelected">All Distances</label>
+
+                        <InputCheckbox @bind-Value="FiltersForm.Distance1000IsSelected" id="btn-check-Distance1000IsSelected" class="btn-check" />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-Distance1000IsSelected">1000m (5f)</label>
+
+                        <InputCheckbox @bind-Value="FiltersForm.Distance1200IsSelected" id="btn-check-Distance1200IsSelected" class="btn-check" />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-Distance1200IsSelected">1200m (6f)</label>
+
+                        <InputCheckbox @bind-Value="FiltersForm.Distance1400IsSelected" id="btn-check-Distance1400IsSelected" class="btn-check" />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-Distance1400IsSelected">1400m (7f)</label>
+
+                        <InputCheckbox @bind-Value="FiltersForm.Distance1600IsSelected" id="btn-check-Distance1600IsSelected" class="btn-check" />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-Distance1600IsSelected">1600m (8f)</label>
+
+                        <InputCheckbox @bind-Value="FiltersForm.Distance1800IsSelected" id="btn-check-Distance1800IsSelected" class="btn-check" />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-Distance1800IsSelected">1800m (9f)</label>
+
+                        <InputCheckbox @bind-Value="FiltersForm.Distance2000IsSelected" id="btn-check-Distance2000IsSelected" class="btn-check" />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-Distance2000IsSelected">2000m (10f)</label>
+
+                        <InputCheckbox @bind-Value="FiltersForm.Distance2200IsSelected" id="btn-check-Distance2200IsSelected" class="btn-check" />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-Distance2200IsSelected">2200m (11f)</label>
+
+                        <InputCheckbox @bind-Value="FiltersForm.Distance2400IsSelected" id="btn-check-Distance2400IsSelected" class="btn-check" />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-Distance2400IsSelected">2400m (12f)</label>
+
+                        <InputCheckbox @bind-Value="FiltersForm.Distance2600IsSelected" id="btn-check-Distance2600IsSelected" class="btn-check" />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-Distance2600IsSelected">2600m (13f)</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col hstack gap-3">
+                        <p>Event Type: </p>
+                        <InputCheckbox @bind-Value="FiltersForm.EventTypeAllIsSelected" id="btn-check-EventTypeAllIsSelected" class="btn-check" />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-EventTypeAllIsSelected">All Event Types</label>
+                    </div>
+                    <div class="col hstack gap-3">
+                        <p>Entry Fee: </p>
+                        
+                        <InputRadioGroup @bind-Value="FiltersForm.FeeSelected">
+
+                            <InputRadio Value="@("All")" id="btn-check-FeeAllIsSelected" class="btn-check" />
+                            <label class="btn btn-outline-primary btn-sm" for="btn-check-FeeAllIsSelected">All Fee Types</label>
+
+                            <InputRadio Value="@("Free")" id="btn-check-FeeFreeIsSelected" class="btn-check" />
+                            <label class="btn btn-outline-primary btn-sm" for="btn-check-FeeFreeIsSelected">Free</label>
+
+                            <InputRadio Value="@("Paid")" id="btn-check-FeePaidIsSelected" class="btn-check" />
+                            <label class="btn btn-outline-primary btn-sm" for="btn-check-FeePaidIsSelected">Paid</label>
+
+                        </InputRadioGroup>
+
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col hstack gap-3">
+                        <p>Surface: <span class="badge bg-secondary">Soon &trade;</span></p>
+                        
+                        <InputCheckbox @bind-Value="FiltersForm.SurfaceAllIsSelected" id="btn-check-SurfaceAllIsSelected" class="btn-check" />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-SurfaceAllIsSelected">All Surfaces</label>
+                        
+                        <InputCheckbox @bind-Value="FiltersForm.SurfaceRigidIsSelected" id="btn-check-SurfaceRigidIsSelected" class="btn-check" disabled />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-SurfaceRigidIsSelected">Rigid</label>
+                        
+                        <InputCheckbox @bind-Value="FiltersForm.SurfaceHardIsSelected" id="btn-check-SurfaceHardIsSelected" class="btn-check" disabled />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-SurfaceHardIsSelected">Hard</label>
+                        
+                        <InputCheckbox @bind-Value="FiltersForm.SurfaceYieldingIsSelected" id="btn-check-SurfaceYieldingIsSelected" class="btn-check" disabled />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-SurfaceYieldingIsSelected">Yielding</label>
+                        
+                        <InputCheckbox @bind-Value="FiltersForm.SurfaceSoftIsSelected" id="btn-check-SurfaceSoftIsSelected" class="btn-check" disabled />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-SurfaceSoftIsSelected">Soft</label>
+                        
+                        <InputCheckbox @bind-Value="FiltersForm.SurfaceOffIsSelected" id="btn-check-SurfaceOffIsSelected" class="btn-check" disabled />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-SurfaceOffIsSelected">Off</label>
+                        
+                        <InputCheckbox @bind-Value="FiltersForm.SurfaceDirtIsSelected" id="btn-check-SurfaceDirtIsSelected" class="btn-check" disabled />
+                        <label class="btn btn-outline-primary btn-sm" for="btn-check-SurfaceDirtIsSelected">Dirt</label>
+
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        @* <button type="submit" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#filters">Submit</button> *@
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </div>
+                </div>
+                
+            </EditForm>
+        </div>
+    </div>
+
+    @if (_refreshTimer != null)
+    {
+    <div class="row">
+        <div class="col">
+            <div class="alert alert-success">
+                Refreshing data in: @counter seconds
+                <label class="btn btn-primary btn-sm" @onclick="HandleStopTimerClick">Stop Refreshing</label>
+
+            </div>
+        </div>
+    </div>
+    }
+
+    @if (Races == null && Loading)
+    {
+    <div class="row">
+        <div class="col">
+            <div class="alert alert-info">Asking around the track...</div>
+        </div>
+    </div>
+    }
+    else if (Races != null && !Races.Any())
+    {
+    <div class="row">
+        <div class="col">
+            <div class="alert alert-warning text-dark">
+                <p>No open races found, try adjusting your filters, or wait for auto-refresh to notify you when there are races found.</p>
+                <p><b>Note:</b> An audio alert sound will play, adjust your speakers accordingly, also Browser notifications will push if enabled.</p>
+            </div>
+        </div>
+    </div>
+    }
+
+</div>
+
+@if (Races != null && Races.Any())
+{
+
+    @if (playAudio)
+    {
+        <audio autoplay controls><source src="https://www.w3schools.com/html/horse.mp3" /></audio>        
+    }
+
+<table class="table table-striped align-middle mb-0 bg-dark">
+    <thead class="bg-black">
+        <tr>
+            <th></th>
+            <th>Name</th>
+            <th>Class</th>
+            <th>Distance</th>
+            <th>Event Type</th>
+            <th>Entry Fee / Prize Pool (ETH)</th>
+            <th>Entrants</th>
+            <th>Surface</th>
+        </tr>
+    </thead>
+    <tbody>
+
+    @for (var i = 0; i < @Races.Count(); i++)
+    {
+        var r = @Races.ElementAt(i);
+        var url = $"https://zed.run/race/{@r.RaceId}";
+
+        <tr>
+            <td data-bs-toggle="collapse" data-bs-target="#race-@r.RaceId">
+                [+]
+            </td>
+            <td>
+                <div class="d-flex align-items-center">
+                    
+                    <div class="ms-3">
+                        <p class="fw-bold mb-1"><NavLink href="@url" target="_blank">@r.Name</NavLink></p>
+                        <p class="text-muted mb-0">@r.City, @r.Country (@r.CountryCode)</p>
+                    </div>
+                </div>
+            </td>
+            <td>
+                <span class="badge rounded-pill bg-primary">@r.Class.ToClassDisplay()</span>
+            </td>
+            <td>
+                @string.Concat(r.Length, "m")<br/>
+                @r.Length.ToFurlong()f
+            </td>
+            <td>
+                <ul>
+                    @* <li>@r.EventType.Title</li>
+                    <li>@r.EventType.Description</li> *@
+                    @foreach (var label in @r.EventType.Labels)
+                    {
+                        if (!string.IsNullOrWhiteSpace(label.Typename))
+                        {
+                            <li>@label.Typename</li>
+                        }
+                        
+                        @* <li>@label.Name</li> *@
+                        <li>@label.Description</li>
+                    }
+                </ul>
+            </td>
+            <td>
+                @if (@r.Fee == "0.0" && @r.Prize != null && @r.Prize.Total == "0")
+                {
+                    <span class="badge rounded-pill bg-success">FREE</span>
+                }
+                else
+                {
+                    <p>Entry Fee: @r.Fee<br/>Prize Pool: <span title="@r.Prize.Total.WeiToEth(true)">@r.Prize.Total.WeiToEth()</span>
+                    </p>
+                    <ul>
+                        <li>1st: <span title="@r.Prize.First.WeiToEth(true)">@r.Prize.First.WeiToEth()</span></li>
+                        <li>2nd: <span title="@r.Prize.Second.WeiToEth(true)">@r.Prize.Second.WeiToEth()</span></li>
+                        <li>3rd: <span title="@r.Prize.Third.WeiToEth(true)">@r.Prize.Third.WeiToEth()</span></li>
+                    </ul>
+                }
+            </td>
+            <td>
+                @r.Horses.Count() / 12
+            </td>
+            <td>
+                <p class="fw-normal mb-1">@r.RaceFactor?.SurfaceValue</p>
+            </td>
+        </tr>
+
+        <tr id="race-@r.RaceId" class="collapse">
+            <td colspan="6">
+                <pre>@JsonSerializer.Serialize(r, new JsonSerializerOptions { WriteIndented = true })</pre>
+            </td>
+        </tr>
+    }
+    
+            </tbody>
+        </table>
+
+}
+
+@code {
+
+    private bool playAudio = false;
+    private static System.Timers.Timer _refreshTimer = null;
+    private int counter = 30;
+    public void StartTimer()
+    {
+        Logger.LogDebug("Starting timer");
+        var timeSpan = TimeSpan.FromSeconds(1);
+        _refreshTimer = new System.Timers.Timer(timeSpan.TotalMilliseconds);
+        _refreshTimer.Elapsed += RefreshTimer;
+        _refreshTimer.Enabled = true;
+    }
+
+    public void RefreshTimer(Object source, System.Timers.ElapsedEventArgs e)
+    {
+        Logger.LogDebug($"Refresh timer fired, counter: {counter}");
+
+        if (Loading)
+        {
+            Logger.LogDebug("Already waiting on previous call, skipping.");
+            return;
+        }
+        
+        if (counter > 0)
+        {
+            // countdown to 0
+            counter -= 1;
+        }
+        else
+        {
+            // refresh data and reset counter
+            playAudio = false;
+            var numRaces = Races.Count();
+            Task.Run(() => HandleValidSubmit()).GetAwaiter().GetResult();
+            if (numRaces != Races.Count())
+            {
+                playAudio = true;
+                if (Races.Count() > 0) Task.Run(() => ShowSimpleNotification()).GetAwaiter().GetResult();
+            }
+            counter = 30;
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    @inject NavigationManager NavigationManager;
+
+    private bool Loading { get; set; } = false;
+
+    private PersistingComponentStateSubscription persistingSubscription;
+
+    public IEnumerable<OpenRace> Races { get; set; }
+
+    public OpenRacesFiltersForm FiltersForm = new();
+    private EditContext? editContext;
+
+    protected override void OnInitialized()
+    {
+        editContext = new(FiltersForm);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        Loading = true;
+
+        Logger.LogDebug($"HandleValidSubmit");
+
+        var input = new GetOpenRacesInputDTO();
+
+        input.ClassAllIsSelected = FiltersForm.ClassSelected == Zernest.Models.ZedRun.Classes.All;
+        input.ClassDiscoveryIsSelected = FiltersForm.ClassSelected == Zernest.Models.ZedRun.Classes.Discovery;
+        input.ClassOpenIsSelected = FiltersForm.ClassSelected == Zernest.Models.ZedRun.Classes.Open;
+        input.Class1IsSelected = FiltersForm.ClassSelected == Zernest.Models.ZedRun.Classes.One;
+        input.Class2IsSelected = FiltersForm.ClassSelected == Zernest.Models.ZedRun.Classes.Two;
+        input.Class3IsSelected = FiltersForm.ClassSelected == Zernest.Models.ZedRun.Classes.Three;
+        input.Class4IsSelected = FiltersForm.ClassSelected == Zernest.Models.ZedRun.Classes.Four;
+        input.Class5IsSelected = FiltersForm.ClassSelected == Zernest.Models.ZedRun.Classes.Five;
+        input.Class6IsSelected = FiltersForm.ClassSelected == Zernest.Models.ZedRun.Classes.Six;
+
+        input.DistanceAllIsSelected = FiltersForm.DistanceAllIsSelected;
+        input.Distance1000IsSelected = FiltersForm.Distance1000IsSelected;
+        input.Distance1200IsSelected = FiltersForm.Distance1200IsSelected;
+        input.Distance1400IsSelected = FiltersForm.Distance1400IsSelected;
+        input.Distance1600IsSelected = FiltersForm.Distance1600IsSelected;
+        input.Distance1800IsSelected = FiltersForm.Distance1800IsSelected;
+        input.Distance2000IsSelected = FiltersForm.Distance2000IsSelected;
+        input.Distance2200IsSelected = FiltersForm.Distance2200IsSelected;
+        input.Distance2400IsSelected = FiltersForm.Distance2400IsSelected;
+        input.Distance2600IsSelected = FiltersForm.Distance2600IsSelected;
+
+        input.FeeAllIsSelected = FiltersForm.FeeSelected == "All";
+        input.FeeFreeIsSelected = FiltersForm.FeeSelected == "Free";
+        input.FeePaidIsSelected = FiltersForm.FeeSelected == "Paid";
+
+        input.SurfaceAllIsSelected = FiltersForm.SurfaceAllIsSelected;
+        input.SurfaceRigidIsSelected = FiltersForm.SurfaceRigidIsSelected;
+        input.SurfaceHardIsSelected = FiltersForm.SurfaceHardIsSelected;
+        input.SurfaceYieldingIsSelected = FiltersForm.SurfaceYieldingIsSelected;
+        input.SurfaceSoftIsSelected = FiltersForm.SurfaceSoftIsSelected;
+        input.SurfaceOffIsSelected = FiltersForm.SurfaceOffIsSelected;
+        input.SurfaceDirtIsSelected = FiltersForm.SurfaceDirtIsSelected;
+
+        var cmd = new GetOpenRacesCommand(input);
+        Races = await GetOpenRacesCommandHandler.Handle(cmd, new CancellationToken());
+        Logger.LogDebug($"Displaying {Races.Count()} open races");
+
+        if (_refreshTimer == null)
+        {
+            Logger.LogDebug("Starting timer for first time");
+            StartTimer();
+        }
+
+        Loading = false;
+    }
+    
+    private void HandleResetFiltersClick()
+    {
+        if (_refreshTimer != null)
+        {
+            _refreshTimer.Enabled = false;
+            _refreshTimer.Dispose();
+            _refreshTimer = null;
+        }
+        NavigationManager.NavigateTo("openraces", true);
+    }
+    
+    private void HandleStopTimerClick()
+    {
+        if (_refreshTimer != null)
+        {
+            _refreshTimer.Enabled = false;
+            _refreshTimer.Dispose();
+            _refreshTimer = null;
+        }
+    }
+
+    public class OpenRacesFiltersForm
+    {
+        public int ClassSelected { get; set; } = Zernest.Models.ZedRun.Classes.All;
+
+        private bool _classAllIsSelected = true;
+        public bool ClassAllIsSelected
+        {
+            get
+            {
+                return _classAllIsSelected;
+            }
+            set
+            {
+                _classAllIsSelected = value;
+                Class1IsSelected = false;
+                Class2IsSelected = false;
+                Class3IsSelected = false;
+                Class4IsSelected = false;
+                Class5IsSelected = false;
+                Class6IsSelected = false;
+                ClassDiscoveryIsSelected = false;
+                ClassOpenIsSelected = false;
+            }
+        }
+
+        public bool Class1IsSelected { get; set; }
+        public bool Class2IsSelected { get; set; }
+        public bool Class3IsSelected { get; set; }
+        public bool Class4IsSelected { get; set; }
+        public bool Class5IsSelected { get; set; }
+        public bool Class6IsSelected { get; set; }
+        public bool ClassDiscoveryIsSelected { get; set; }
+        public bool ClassOpenIsSelected { get; set; }
+
+        private bool _distanceAllIsSelected = true;
+        public bool DistanceAllIsSelected
+        {
+            get
+            {
+                return _distanceAllIsSelected;
+            }
+            set
+            {
+                if (value == _distanceAllIsSelected) return;
+                _distanceAllIsSelected = value;
+
+                if (value)
+                {
+                    // if all is checked, deselect rest
+                    _distance1000IsSelected = false;
+                    _distance1200IsSelected = false;
+                    _distance1400IsSelected = false;
+                    _distance1600IsSelected = false;
+                    _distance1800IsSelected = false;
+                    _distance2000IsSelected = false;
+                    _distance2200IsSelected = false;
+                    _distance2400IsSelected = false;
+                    _distance2600IsSelected = false;
+                }
+                else
+                {
+                    // if all are deselected and try to deselect all, keep all selected
+                    DetectDistanceAllIsSelected();
+                }
+            }
+        }
+
+        private bool _distance1000IsSelected;
+        public bool Distance1000IsSelected
+        {
+            get
+            {
+                return _distance1000IsSelected;
+            }
+            set
+            {
+                _distance1000IsSelected = value;
+                DetectDistanceAllIsSelected();
+            }
+        }
+
+        private bool _distance1200IsSelected;
+        public bool Distance1200IsSelected
+        {
+            get
+            {
+                return _distance1200IsSelected;
+            }
+            set
+            {
+                _distance1200IsSelected = value;
+                DetectDistanceAllIsSelected();
+            }
+        }
+
+        private bool _distance1400IsSelected;
+        public bool Distance1400IsSelected
+        {
+            get
+            {
+                return _distance1400IsSelected;
+            }
+            set
+            {
+                _distance1400IsSelected = value;
+                DetectDistanceAllIsSelected();
+            }
+        }
+
+        private bool _distance1600IsSelected;
+        public bool Distance1600IsSelected
+        {
+            get
+            {
+                return _distance1600IsSelected;
+            }
+            set
+            {
+                _distance1600IsSelected = value;
+                DetectDistanceAllIsSelected();
+            }
+        }
+
+        private bool _distance1800IsSelected;
+        public bool Distance1800IsSelected
+        {
+            get
+            {
+                return _distance1800IsSelected;
+            }
+            set
+            {
+                _distance1800IsSelected = value;
+                DetectDistanceAllIsSelected();
+            }
+        }
+
+        private bool _distance2000IsSelected;
+        public bool Distance2000IsSelected
+        {
+            get
+            {
+                return _distance2000IsSelected;
+            }
+            set
+            {
+                _distance2000IsSelected = value;
+                DetectDistanceAllIsSelected();
+            }
+        }
+
+        private bool _distance2200IsSelected;
+        public bool Distance2200IsSelected
+        {
+            get
+            {
+                return _distance2200IsSelected;
+            }
+            set
+            {
+                _distance2200IsSelected = value;
+                DetectDistanceAllIsSelected();
+            }
+        }
+
+        private bool _distance2400IsSelected;
+        public bool Distance2400IsSelected
+        {
+            get
+            {
+                return _distance2400IsSelected;
+            }
+            set
+            {
+                _distance2400IsSelected = value;
+                DetectDistanceAllIsSelected();
+            }
+        }
+
+        private bool _distance2600IsSelected;
+        public bool Distance2600IsSelected
+        {
+            get
+            {
+                return _distance2600IsSelected;
+            }
+            set
+            {
+                _distance2600IsSelected = value;
+                DetectDistanceAllIsSelected();
+            }
+        }
+
+        public bool EventTypeAllIsSelected { get; set; } = true;
+        public string FeeSelected { get; set; } = "All";
+        public bool FeeAllIsSelected { get; set; } = true;
+        public bool FeeFreeIsSelected { get; set; }
+        public bool FeePaidIsSelected { get; set; }
+        public bool SurfaceAllIsSelected { get; set; } = true;
+        public bool SurfaceRigidIsSelected { get; set; }
+        public bool SurfaceHardIsSelected { get; set; }
+        public bool SurfaceYieldingIsSelected { get; set; }
+        public bool SurfaceSoftIsSelected { get; set; }
+        public bool SurfaceOffIsSelected { get; set; }
+        public bool SurfaceDirtIsSelected { get; set; }
+
+        private void DetectDistanceAllIsSelected()
+        {
+            DistanceAllIsSelected = !Distance1000IsSelected && !Distance1200IsSelected && !Distance1400IsSelected
+                && !Distance1600IsSelected && !Distance1800IsSelected && !Distance2000IsSelected
+                && !Distance2200IsSelected && !Distance2400IsSelected && !Distance2600IsSelected;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			_notificationSupported = await _notificationService.IsBrowserSupportedAsync();
+			_htmlNotificationPermission = await _notificationService.CheckPermissionAsync();
+
+            if (_notificationSupported)
+            {
+                await RequestPermission();
+            }
+			StateHasChanged();
+		}
+	}
+
+	//HTML5 notification
+	private bool _notificationSupported;
+	private HtmlNotificationPermissionTypes _htmlNotificationPermission;
+
+	private async Task RequestPermission()
+	{
+		await _notificationService.RequestPermissionAsync(async res =>
+		{
+			_htmlNotificationPermission = res;
+			StateHasChanged();
+		});
+	}
+    
+	private string _notificationTitle = "New Open Races Found!";
+	private string _notificationBody = "New Open Races found matching your criteria!";
+	private string _notificationIcon = "img/notification.gif";
+
+	private async Task ShowSimpleNotification()
+	{
+		var options = new HtmlNotificationOptions(_notificationTitle)
+		{
+			Body = _notificationBody,
+			Icon = _notificationIcon,
+			Vibrate = new int[] { 100, 200, 100},
+			//events
+			OnOpenCallback = OnOpen,
+			OnCloseCallback = OnClose,
+			OnErrorCallback = OnError,
+			OnClickCallback = OnClick,
+		};
+
+		var id = await _notificationService.ShowsAsync(options);
+	}
+
+	public async Task OnOpen(Guid id)
+	{
+		//TODO: handle Alert event
+	}
+	public async Task OnClose(Guid id)
+	{
+		//TODO: handle Alert event
+	}
+	public async Task OnError(Guid id)
+	{
+		//TODO: handle Alert event
+	}
+	public async Task OnClick(Guid id)
+	{
+		//TODO: handle Alert event
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		if (_notificationService is not null)
+		{
+			await _notificationService.DisposeAsync();
+		}
+        
+        if (_refreshTimer != null) _refreshTimer.Dispose();
+	}
+}

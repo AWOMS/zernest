@@ -1,0 +1,54 @@
+@page "/horses/{horseIds?}"
+@using Microsoft.Extensions.Logging
+@using AWOMS.Zernest.Applications.UI.Server.Shared.Components
+@inject ILogger<Horses> Logger
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<PageTitle>Horses</PageTitle>
+
+<h1>Horses</h1>
+<p class="lead">View horse details.</p>
+
+@if (string.IsNullOrWhiteSpace(HorseIds))
+{
+    <div class="container">
+        <div class="row justify-content-evenly">
+            <div class="col-md-auto">
+                <h3>Search by Horse ID</h3>
+                <p>Search for specific horse IDs, comma or space separated if multiple.</p>
+                <GetHorseIdsComponent GotHorseIds="@GotHorseIds" />
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <p>Results for: @HorseIds</p>
+    <GetHorsesWithHistoryComponent HorseIds="@HorseIds" />
+}
+
+@code {
+
+    [Parameter]
+    public string? HorseIds { get; set; } = null;
+
+    @* protected override async Task OnInitializedAsync()
+    {
+        Logger.LogDebug($"OnInitializedAsync called, HorseIds: {HorseIds}");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Logger.LogDebug($"OnAfterRenderAsync called, firstRender: {firstRender}, HorseIds: {HorseIds}");
+    } *@
+
+    // this function is only used as the callback from the GetHorseIdsComponent
+    // we get the IDs and redirect them so the IDs are in the URL
+    // which goes into the normal Init for param flow
+    private void GotHorseIds(string horseIds)
+    {
+        Logger.LogDebug($"GotHorseId callback called with {horseIds}, navigating to horses/{horseIds}");
+        NavigationManager.NavigateTo($"horses/{horseIds}");
+    }
+}

@@ -1,0 +1,146 @@
+@using Microsoft.Extensions.Logging
+@using AWOMS.Zernest.Components.Horses.GetHorsesWithHistory
+@implements IDisposable
+@inject ILogger<GetHorsesWithHistoryComponent> Logger
+@inject PersistentComponentState ApplicationState
+@inject AWOMS.Zernest.Components.Horses.GetHorsesWithHistory.GetHorsesWithHistoryCommandHandler GetHorsesWithHistoryCommandHandler
+@inject IJSRuntime JS
+
+@if (Horses == null)
+{
+    <div class="alert alert-info">Asking around the stables...</div>
+}
+else if (Horses != null && !Horses.Any())
+{
+    <div class="alert alert-warning">I reckon you might be confused, nobody here like that.</div>
+}
+else if (Horses != null && Horses.Count() == 1)
+{
+    var horseId = Horses.First().HorseId.ToString();
+    <FullHorseDetailsComponent HorseId="@horseId" />
+}
+else
+{
+    <table class="table table-dark table-striped table-hover">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Name</th>
+                <th>Bloodline</th>
+                <th>Breed Type</th>
+                <th>Career 1sts</th>
+                <th>Career 2nds</th>
+                <th>Career 3rds</th>
+                <th>Color</th>
+                <th>HexCode</th>
+                <th>Class</th>
+                <th>Genotype</th>
+                <th>Horse ID</th>
+                <th>IsTrialHorse</th>
+                <th>Owner</th>
+                <th>Owner Stable</th>
+                <th>Rating</th>
+                <th>Surface Preference</th>
+                <th>Type</th>
+                <th>Win Rate %</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var horse in Horses)
+            {
+                var href = $"horses/{@horse.HorseId}";
+                <tr>
+                    <td><img src="@horse.ImgUrl" width="100px" /></td>
+                    <td>
+                        <NavLink class="nav-link" href="@href">@horse.HashInfo.Name</NavLink>
+                    </td>
+                    <td>@horse.Bloodline</td>
+                    <td>@horse.BreedType</td>
+                    <td>@horse.Career.First</td>
+                    <td>@horse.Career.Second</td>
+                    <td>@horse.Career.Third</td>
+                    <td>@horse.HashInfo.Color</td>
+                    <td>@horse.HashInfo.HexCode</td>
+                    <td>@horse.Class</td>
+                    <td>@horse.Genotype</td>
+                    <td>@horse.HorseId</td>
+                    <td>@horse.IsTrialHorse</td>
+                    <td>@horse.Owner</td>
+                    <td>@horse.OwnerStable</td>
+                    <td>@horse.Rating</td>
+                    <td>@horse.SurfacePreference</td>
+                    <td>@horse.Type</td>
+                    <td>@horse.WinRate%</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private PersistingComponentStateSubscription persistingSubscription;
+
+    [Parameter]
+    public string? HorseIds { get; set; } = null;
+
+    public IEnumerable<AWOMS.Zernest.Components.Horses.GetHorsesWithHistory.HorseWithHistory>? Horses { get; set; } = null;
+
+    //register callback to persist application state data when time comes
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogDebug($"OnInitializedAsync");
+        persistingSubscription = 
+            ApplicationState.RegisterOnPersisting(PersistHorsesWithHistory);
+    }
+
+    //params are captured in url for initial list of horses
+    //if click on single horse, it changes the params, thus triggers this to load again
+    //which is why this is here instead of this being in the Init
+    // https://docs.microsoft.com/en-us/aspnet/core/blazor/components/lifecycle?view=aspnetcore-6.0
+    protected override async Task OnParametersSetAsync()
+    {
+        Logger.LogDebug($"OnParametersSetAsync HorseIds: {HorseIds}");
+        await GetHorsesWithHistory(HorseIds);
+    }
+
+    public async Task GetHorsesWithHistory(string horseIds)
+    {
+        //@TODO add ids to key? doesnt seem to have conflict problem
+        if (!ApplicationState.TryTakeFromJson<IEnumerable<HorseWithHistory>>(
+            "horseswithhistory", out var restored))
+        {
+            Logger.LogDebug($"GetHorsesWithHistory: Getting fresh list for {horseIds}");
+            string[] ids = horseIds.Split(new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var input = new GetHorsesWithHistoryInputDTO
+            {
+                HorseIds = ids
+            };
+            var cmd = new GetHorsesWithHistoryCommand(input);
+            Horses = await GetHorsesWithHistoryCommandHandler.Handle(cmd, new CancellationToken());
+            Logger.LogDebug($"Displaying {Horses.Count()} horses for {horseIds}");
+        }
+        else
+        {
+            Logger.LogDebug("GetHorsesWithHistory: Re-using application state cache");
+            Horses = restored!;
+        }
+    }
+
+    private Task PersistHorsesWithHistory()
+    {
+        Logger.LogDebug($"PersistHorsesWithHistory horseswithhistory");
+        ApplicationState.PersistAsJson("horseswithhistory", Horses);
+        return Task.CompletedTask;
+    }
+
+    void IDisposable.Dispose()
+    {
+        Logger.LogDebug("Dispose");
+        persistingSubscription.Dispose();
+    }
+
+    @* protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Logger.LogDebug($"OnAfterRenderAsync called, FirstRender: {firstRender}, HorseIds: {HorseIds}");
+    } *@
+}

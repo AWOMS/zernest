@@ -1,0 +1,80 @@
+@page "/stable"
+@using Microsoft.Extensions.Logging
+@inject ILogger<Horses> Logger
+@inject IJSRuntime JS
+@using AWOMS.Zernest.Applications.UI.Server.Shared.Components
+
+<PageTitle>Stable</PageTitle>
+
+<h1>Stable</h1>
+<p class="lead">Get stable horses.</p>
+
+<div class="container">
+    <div class="row justify-content-evenly">
+        <div class="col-md-auto">
+            <h3>Connect to Wallet</h3>
+            <p>Connect to Wallet to get your address.</p>
+            <ConnectWalletComponent GotWalletAddress="@GotWalletAddress" />
+            @if (WalletAddress != null)
+            {
+                // if they entered stable address, this allows them to go back to wallet address
+                <button @onclick="UseWalletAddress" class="btn btn-primary">Use Wallet Address</button>
+            }
+        </div>
+        <div class="col-md-auto">
+            <h3>Search Manually</h3>
+            <p>Search for any owner address.</p>
+            <GetStableAddressComponent GotStableAddress="@GotStableAddress" />
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(StableAddress))
+{
+    <p>Results for: @StableAddress</p>
+    <GetStableHorsesComponent @ref="getStableHorsesComponent" StableAddress="@StableAddress" />
+}
+
+@code {
+    public string? WalletAddress { get; set; } = null;
+    public string? StableAddress { get; set; } = null;
+    public GetStableHorsesComponent? getStableHorsesComponent;
+
+    private async void UseWalletAddress()
+    {
+        Logger.LogInformation($"UseWalletAddress called, using {WalletAddress}.");
+        await GotStableAddress(WalletAddress);
+    }
+
+    private async void GotWalletAddress(string? address)
+    {
+        Logger.LogInformation($"GotWalletAddress called with {address}.");
+        WalletAddress = address;
+        await GotStableAddress(address);
+    }
+
+    private async Task GotStableAddress(string? address)
+    {
+        Logger.LogInformation($"GotAddress called with {address}.");
+
+        // if they submitted and got horse results,
+        // and then submit another address,
+        // need to trigger child component to get horses again
+        bool redraw = false;
+        if (getStableHorsesComponent != null && StableAddress != address)
+        {
+            Logger.LogInformation("Getting stable horses");
+            await getStableHorsesComponent.GetStableHorses(address);
+            redraw = true;
+        }
+
+        StableAddress = address;
+
+        // child component needs to be redrawn
+        if (redraw)
+        {
+            Logger.LogInformation("Manually trigger redraw StateHasChanged");
+            StateHasChanged();
+        }
+    }
+}

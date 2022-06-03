@@ -1,0 +1,155 @@
+@using Microsoft.Extensions.Logging
+@using AWOMS.Zernest.Components.Horses.GetStableHorses
+@implements IDisposable
+@inject ILogger<GetStableHorsesComponent> Logger
+@inject PersistentComponentState ApplicationState
+@inject AWOMS.Zernest.Components.Horses.GetStableHorses.GetStableHorsesCommandHandler GetStableHorsesCommandHandler
+@inject IJSRuntime JS
+
+@if (Horses == null)
+{
+    <div class="alert alert-info">Asking around the stables...</div>
+}
+else if (Horses != null && !Horses.Any())
+{
+    <div class="alert alert-warning">I reckon you might be confused, nobody here like that.</div>
+}
+else if (Horses != null && Horses.Any())
+{
+    <table class="table table-dark table-striped table-hover">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Name</th>
+                <th>Bloodline</th>
+                <th>Breed Type</th>
+                <th>Breeding Counter</th>
+                <th>Breeding Cycle Reset</th>
+                <th>Breeding Decay Level</th>
+                <th>Breeding Decay Limit</th>
+                <th>Career 1sts</th>
+                <th>Career 2nds</th>
+                <th>Career 3rds</th>
+                <th>Color</th>
+                <th>HexCode</th>
+                <th>Class</th>
+                <th>Gender</th>
+                <th>Genotype</th>
+                <th>IsApprovedForRacing</th>
+                <th>IsAvailable</th>
+                <th>IsBeingTransferred</th>
+                <th>IsInStud</th>
+                <th>IsOnRacingContract</th>
+                <th>IsRunningFreeRace</th>
+                <th>IsUpgraded</th>
+                <th>LastStudDuration</th>
+                <th>LastStudTimestamp</th>
+                <th>MatingPrice</th>
+                <th># Races</th>
+                <th>Offspring Count</th>
+                <th>Offspring Count After Decay</th>
+                <th>Owner</th>
+                <th>Rating</th>
+                <th>SuperCoat</th>
+                <th>Surface Preference</th>
+                <th>Tx</th>
+                <th>Tx Date</th>
+                <th>Win Rate %</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var horse in Horses)
+            {
+                var href = $"horses/{@horse.HorseId}";
+                <tr>
+                    <td><img src="@horse.ImgUrl" width="100px" /></td>
+                    <td>
+                        <NavLink class="nav-link" href="@href">@horse.HashInfo.Name
+                        </NavLink>
+                    </td>
+                    <td>@horse.Bloodline</td>
+                    <td>@horse.BreedType</td>
+                    <td>@horse.BreedingCounter</td>
+                    <td>@horse.BreedingCycleReset</td>
+                    <td>@horse.BreedingDecayLevel</td>
+                    <td>@horse.BreedingDecayLimit</td>
+                    <td>@horse.Career.First</td>
+                    <td>@horse.Career.Second</td>
+                    <td>@horse.Career.Third</td>
+                    <td>@horse.HashInfo.Color</td>
+                    <td>@horse.HashInfo.HexCode</td>
+                    <td>@horse.Class</td>
+                    <td>@horse.Gender</td>
+                    <td>@horse.Genotype</td>
+                    <td>@horse.IsApprovedForRacing</td>
+                    <td>@horse.IsAvailable</td>
+                    <td>@horse.IsBeingTransferred</td>
+                    <td>@horse.IsInStud</td>
+                    <td>@horse.IsOnRacingContract</td>
+                    <td>@horse.IsRunningFreeRace</td>
+                    <td>@horse.IsUpgraded</td>
+                    <td>@horse.LastStudDuration</td>
+                    <td>@horse.LastStudTimestamp</td>
+                    <td>@horse.MatingPrice</td>
+                    <td>@horse.NumberOfRaces</td>
+                    <td>@horse.OffspringCount</td>
+                    <td>@horse.OffspringCountAfterDecay</td>
+                    <td>@horse.Owner</td>
+                    <td>@horse.Rating</td>
+                    <td>@horse.SuperCoat</td>
+                    <td>@horse.SurfacePreference</td>
+                    <td>@horse.Tx</td>
+                    <td>@horse.TxDate</td>
+                    <td>@horse.WinRate%</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private PersistingComponentStateSubscription persistingSubscription;
+
+    [Parameter]
+    public string? StableAddress { get; set; }
+
+    public IEnumerable<StableHorse> Horses { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        persistingSubscription =
+            ApplicationState.RegisterOnPersisting(PersistStableHorses);
+
+        if (!ApplicationState.TryTakeFromJson<IEnumerable<StableHorse>>(
+            "stablehorses", out var restored))
+        {
+            await GetStableHorses(StableAddress);
+        }
+        else
+        {
+            Horses = restored!;
+        }
+    }
+
+    public async Task GetStableHorses(string stableAddress)
+    {
+        var dto = new GetStableHorsesInputDTO
+        {
+            StableAddress = stableAddress
+        };
+        var cmd = new GetStableHorsesCommand(dto);
+        Horses = await GetStableHorsesCommandHandler.Handle(cmd, new CancellationToken());
+        Logger.LogInformation($"Displaying {Horses.Count()} horses for {stableAddress}");
+    }
+
+    private Task PersistStableHorses()
+    {
+        ApplicationState.PersistAsJson("stablehorses", Horses);
+        return Task.CompletedTask;
+    }
+
+    void IDisposable.Dispose()
+    {
+        persistingSubscription.Dispose();
+    }
+}

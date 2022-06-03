@@ -1,0 +1,34 @@
+@page "/changelog"
+@using Microsoft.Extensions.Logging
+@inject ILogger<Changelog> Logger
+@inject IJSRuntime JS
+
+<PageTitle>Changelog</PageTitle>
+
+<h1>Changelog</h1>
+
+<h2>v0.1.0</h2>
+<b>Release date: 2022-06-03</b>
+<ul>
+    <li>
+        Open races
+        <ul>
+            <li>Search for open races using filters</li>
+            <li>Auto refresh results and play audio alert when new races found</li>
+            <li>Link directly to race to register</li>
+        </ul>
+    </li>
+    <li>
+        Stable
+        <ul>
+            <li>Connect to wallet to get horses by wallet address</li>
+            <li>Get horses by stable owner address manually</li>
+        </ul>
+    </li>
+    <li>
+        Horses
+        <ul>
+            <li>View basic horse profile, career podium stats</li>
+        </ul>
+    </li>
+</ul>

@@ -1,0 +1,54 @@
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.Extensions.Logging
+@implements IDisposable
+@inject ILogger<GetHorseIdsComponent> Logger
+@inject IJSRuntime JS
+
+<EditForm Model="@horseIdsForm" OnValidSubmit="@HandleValidSubmit" class="form">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <p>
+        <label class="form-label">
+            <InputText id="horseIds" @bind-Value="horseIdsForm.horseIds" DisplayName="Horse IDs" size=52
+                placeholder="" class="form-control" />
+        </label>
+    </p>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        Logger.LogDebug("OnInitialized called, makes edit form");
+        editContext = new(horseIdsForm);
+    }
+
+    @* protected override async Task OnInitializedAsync()
+    {
+        Logger.LogDebug($"OnInitializedAsync called");
+    } *@
+
+    [Parameter]
+    public EventCallback<string> GotHorseIds { get; set; } 
+    private EditContext? editContext;
+    private HorseIdsForm horseIdsForm = new();
+    public class HorseIdsForm
+    {
+        [Required]
+        [RegularExpression(@"^\d+([,;\s]\d+)*$", ErrorMessage = "Single horse number, or separated by space, comma, or semi-colon only.")]
+        public string? horseIds { get; set; }
+    }
+
+    // form submitted
+    private async Task HandleValidSubmit()
+    {
+        Logger.LogDebug($"HandleValidSubmit called, horseIds: {horseIdsForm.horseIds}");
+        await GotHorseIds.InvokeAsync(horseIdsForm.horseIds);
+    }
+
+    public void Dispose()
+    {
+        Logger.LogDebug("Disposing");
+    }
+}

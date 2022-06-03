@@ -1,0 +1,12 @@
+@page "/openraces"
+@using Microsoft.Extensions.Logging
+@inject ILogger<OpenRaces> Logger
+@inject IJSRuntime JS
+@using AWOMS.Zernest.Applications.UI.Server.Shared.Components
+
+<PageTitle>Open Races</PageTitle>
+
+<h1>Open Races</h1>
+<p class="lead">We'll help you find the race you're looking for.</p>
+
+<GetOpenRacesComponent />

@@ -187,6 +187,14 @@ This produces `bin\Release\.net6.0\publish` folder.
 3. In VS code, right click `Applications\UI.Server` folder
 4. Click Deploy to Web App
 
+## Known Issues
+
+`DotNet Runtime 6.0WARNING: Unable to find the startup DLL name. Could not find any files with extension '.runtimeconfig.json'`
+
+`.vscode\settings.json`:
+
+- "appService.deploySubpath": "Applications\\UI.Server\\bin\\Release\\net6.0\\publish"
+
 # ZedRun API v1:
 
 - [x] https://racing-api.zed.run/api/v1/races?status=scheduling

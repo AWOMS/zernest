@@ -2,13 +2,15 @@
 
 Zernest is a tool to help ZedRun users analyze their horses and suggest what races to enter them into.
 
+https://zernest.awoms.com/
+
 # Roadmap
 
 ## Released
 
 ### v0.1.0
 
-**Release Date:** 2022-05-30
+**Release Date:** 2022-06-03
 
 <ul>
   <li>Integrate with ZedRun API v1 (REST)</li>
@@ -17,13 +19,13 @@ Zernest is a tool to help ZedRun users analyze their horses and suggest what rac
   <li>Get horses by horse IDs</li>
   <li>Get full horse details</li>
   <li>Get open races</li>
+  <li>Alert when open race matches criteria</li>
 </ul>
 
 ## Future
 
 > *Note: This is where ideas are captured. These may or may not get implemented, and the order is not guaranteed.*
 
-- [ ] Alert when open race matches criteria
 - [ ] Get current tournaments
 - [ ] Get horse race results history
 - [ ] Analyze history of race conditions
